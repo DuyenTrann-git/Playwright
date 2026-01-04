@@ -1,6 +1,23 @@
 import { test, expect, Page } from '@playwright/test';
 import { format } from 'date-fns'
+import { faker } from '@faker-js/faker';
 const LOGIN_URL = 'https://crm.anhtester.com/admin/';
+
+
+function createRandomUser() {
+    return {
+        phone: faker.phone.number(),
+        vatNumber: faker.string.numeric(10),
+        website: faker.internet.url(),
+        currency: 'USD',
+        language: 'Vietnamese',
+        address: faker.location.streetAddress(),
+        city: faker.location.city(),
+        state: faker.location.state(),
+        zipcode: faker.location.zipCode(),
+        country: 'Vietnam'
+    };
+}
 
 async function loginAndNavigateToNewCustomer(page: Page, tabName: string) {
     //thực hiện hành động Login -> navigate tới customer
@@ -46,6 +63,25 @@ test.describe('CRM Customer Page - Positive case', () => {
         const companyName = `Auto PW company ${parsedDate}`;
         await page.locator('#company').fill(companyName);
 
+
+        // Khởi tạo dữ liệu ngẫu nhiên
+        const information = createRandomUser();
+
+        // Điền thông tin vào ô VAT Number
+        await page.getByRole('textbox', { name: 'VAT Number' }).fill(information.vatNumber);
+
+        // Tìm khu vực bao quanh dropdown Currency và click để mở
+        const currencyContainer = page.locator('div.form-group', { hasText: 'Currency' });
+        await currencyContainer.locator('button[data-id="default_currency"]').click();
+
+        // Chọn giá trị tiền tệ cụ thể (ví dụ: USD) từ danh sách option hiện ra
+        await page
+            .locator('a[role="option"]')
+            .filter({
+                has: page.locator('span.text', { hasText: information.currency })
+            })
+            .click();
+        await page.pause();
         await page
             .locator('#profile-save-section')
             .getByRole('button', { name: 'Save', exact: true })
